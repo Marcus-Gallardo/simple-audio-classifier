@@ -76,4 +76,5 @@ print(classification_report(y_test_labels, y_pred_labels))
 
 # Display confusion matrix
 ConfusionMatrixDisplay.from_predictions(y_test_labels, y_pred_labels)
+plt.xticks(rotation=90)
 plt.show()
