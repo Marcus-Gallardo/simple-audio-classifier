@@ -1,57 +1,16 @@
-# ============================
-# Python
-# ============================
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.so
-
 # Virtual environments
 venv/
 .env/
 .venv/
 
-# Jupyter
-.ipynb_checkpoints/
-
-# ============================
-# Project-specific
-# ============================
-
-# Audio data directories (raw + processed + extracted)
-data/raw_audio/
-data/processed/
-data/features/
-data/**/raw_audio/
-data/**/processed/
-data/**/features/
+# Audio data directories
+data
 
 # Saved models
-models/
-saved_models/
-checkpoints/
-
-# Logs
-logs/
-*.log
-
-# ============================
-# OS
-# ============================
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# Windows
-Thumbs.db
-ehthumbs.db
-desktop.ini
+models
 
 # VSCode
 .vscode/
 
-# PyCharm
-.idea/
+src/__pycache__
+.conda
