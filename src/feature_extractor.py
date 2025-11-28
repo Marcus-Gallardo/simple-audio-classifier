@@ -1,23 +1,27 @@
-import os
 import numpy as np
 import librosa
 import librosa.effects
 
+from src.audio_augmentor import AudioAugmentor
+
 class FeatureExtractor():
 
-    def __init__(self, sr=22050, chunk_duration=3.0, overlap=0.5, n_mels=128, n_fft=1024, hop_length=512):
+    def __init__(self, sr=22050, chunk_duration=1.5, overlaps=[0.0, 0.25, 0.5, 0.75], n_mels=128, n_fft=1024, hop_length=256):
         self.sr = sr
         self.chunk_duration = chunk_duration
-        self.overlap = overlap
+        self.overlaps = overlaps
         self.n_mels = n_mels
         self.n_fft = n_fft
         self.hop_length = hop_length # Hop length for STFT (Short-Time Fourier Transform)
         self.n_frames = self.compute_n_frames()
         self.n_channels = 3  # log-mel + delta + delta-delta
 
+        # Create audio augmentor
+        self.augmentor = AudioAugmentor(sr=self.sr)
+
     # Ensures the number of frames in the given logmel is consistent with n_frames.
     def adjust_frames(self, logmel):
-        n_mels, current_frames = logmel.shape
+        _, current_frames = logmel.shape
     
         if current_frames < self.n_frames:
             # Pad with minimum value (or 0 dB)
@@ -40,22 +44,27 @@ class FeatureExtractor():
             return None
     
     def get_audio_chunks(self, y):
+
+        print("\tChunking audio...")
+
         chunk_len = int(self.chunk_duration * self.sr)
-        hop_len = int(chunk_len * (1 - self.overlap)) # Step size between chunks
 
         chunks = []
         n_samples = len(y)
 
-        if n_samples < chunk_len:
-            # Pad short audio so at least one chunk is created
-            padded = np.pad(y, (0, chunk_len - n_samples))
-            return [padded]
-        
-        # Loop from start of audio to end - chunk legth (to avoid partial chunk)
-        for start in range(0, n_samples - chunk_len + 1, hop_len):
-            end = start + chunk_len
-            chunk = y[start:end]
-            chunks.append(chunk)
+        for offset in self.overlaps:
+            hop_len = int(chunk_len * (1 - offset)) # Step size between chunks
+
+            if n_samples < chunk_len:
+                # Pad short audio so at least one chunk is created
+                padded = np.pad(y, (0, chunk_len - n_samples))
+                return [padded]
+            
+            # Loop from start of audio to end - chunk legth (to avoid partial chunk)
+            for start in range(0, n_samples - chunk_len + 1, hop_len):
+                end = start + chunk_len
+                chunk = y[start:end]
+                chunks.append(chunk)
 
         return chunks
     
@@ -70,6 +79,9 @@ class FeatureExtractor():
 
         log_mel_spec = librosa.power_to_db(mel_spec, ref=np.max)
 
+        # Normalize logmel
+        log_mel_spec = self.normalize_logmel(log_mel_spec)
+
         # Adjust frames to the correct number n_frames
         log_mel_spec = self.adjust_frames(log_mel_spec)
 
@@ -81,43 +93,16 @@ class FeatureExtractor():
         delta2 = librosa.feature.delta(logmel, order=2)
         return delta, delta2
     
-    # Augment audio by adding random noise and pitch shifting. Helps prevent CNN overfitting.
-    def augment(self, audio,
-                noise_level_range=(0.0, 0.005),
-                pitch_shift_range=(-1, 1),
-                time_stretch_range=(0.95, 1.05),
-                volume_scale_range=(0.8, 1.2)):
-       
-        # Gaussian noise
-        noise_level = np.random.uniform(*noise_level_range) # Asterisk unpacks the tuple
-        audio = audio + np.random.randn(len(audio)) * noise_level
-
-        # Pitch shift
-        pitch_shift = np.random.uniform(*pitch_shift_range)
-        if pitch_shift != 0:
-            audio = librosa.effects.pitch_shift(audio, sr=self.sr, n_steps=pitch_shift)
-
-        # Time stretch
-        time_stretch = np.random.uniform(*time_stretch_range)
-        if time_stretch != 1.0:
-            audio = librosa.effects.time_stretch(audio, rate=time_stretch)
-
-        # Volume scaling
-        volume_scale = np.random.uniform(*volume_scale_range)
-        audio = audio * volume_scale
-
-        return audio
-
-    # Extracts features from audio. Computes log-mel spectrogram + deltas, with optional augmentation.
-    def extract_features_from_audio(self, audio, augment=True):
+    def extract_features_from_audio(self, audio):
         chunks = self.get_audio_chunks(audio)
         features = []
 
         for chunk in chunks:
             
-            if augment:
-                chunk = self.augment(chunk)
+            # Augment each chunk's audio
+            chunk = self.augmentor.light_augmentation(chunk)
 
+            # Extract logmel and compute deltas
             logmel = self.extract_logmel(chunk)
             delta, delta2 = self.compute_deltas(logmel)
 
@@ -125,6 +110,8 @@ class FeatureExtractor():
             stacked = np.stack([logmel, delta, delta2], axis=0) # Shape: (3, n_mels, time_frames)
             features.append(stacked)
         
+        print(f"\tExtracted {len(features)} features.")
+
         return features
 
     # Computes the number of frames for log-mel spectrogram based on chunk duration and STFT parameters.
@@ -136,3 +123,8 @@ class FeatureExtractor():
         n_frames = 1 + int((samples - self.n_fft) // self.hop_length)
 
         return n_frames
+    
+    def normalize_logmel(self, spec):
+        mean = spec.mean(axis=1, keepdims=True)
+        std = spec.std(axis=1, keepdims=True) + 1e-6
+        return (spec - mean) / std

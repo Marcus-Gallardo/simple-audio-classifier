@@ -6,7 +6,7 @@ from src.feature_extractor import FeatureExtractor
 from src.trainer import Trainer
 from src.utils import get_raw_audio_path
 from src.load_dataset import load_dataset
-from src.model_builder import build_simple_cnn
+from src.model_builder import build_cnn_v2
 from tensorflow.keras.models import load_model
 # from src.youtube_downloader import YouTubeDownloader
 
@@ -21,16 +21,9 @@ from tensorflow.keras.models import load_model
 # downloader.download_artists(artists, max_per_artist=10)
 
 # Initialize feature extractor
-fe = FeatureExtractor(
-    sr=22050, 
-    chunk_duration=3.0, 
-    overlap=0.5, 
-    n_mels=128, 
-    n_fft=1024, 
-    hop_length=512,
-)
+fe = FeatureExtractor()
 
-dataset_name = "Ten Clairo Songs"
+dataset_name = "Ten Clairo Songs v3"
 
 # Load dataset
 _,  _, label_map = load_dataset(dataset_name)
@@ -39,13 +32,13 @@ _,  _, label_map = load_dataset(dataset_name)
 input_shape = (fe.n_mels, fe.n_frames, fe.n_channels)
 
 # Build model
-model = build_simple_cnn(input_shape=input_shape, num_classes=len(label_map))
+model = build_cnn_v2(input_shape=input_shape, num_classes=len(label_map))
 
 # Initialize trainer
 trainer = Trainer(feature_extractor=fe, model=model, data_dir=get_raw_audio_path())
 
 # Train model
-trainer.train(dataset_name=dataset_name, run_name="run 1")
+trainer.train(dataset_name=dataset_name, run_name="run 3")
 
 # # Get number of songs (number of possible outputs for the model)
 # num_classes = downloader.get_num_songs()

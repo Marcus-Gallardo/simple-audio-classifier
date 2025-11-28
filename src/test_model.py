@@ -62,8 +62,8 @@ def predict_audio(model_path, audio_path, dataset_name):
 
 
 if __name__ == "__main__":
-    dataset_name = "Ten Clairo Songs"
-    run_name = "run 1"
+    dataset_name = "Ten Clairo Songs v3"
+    run_name = "run 3"
 
     model_path = os.path.join(get_model_path(), run_name, "model.keras")
     audio_path = r"C:\Users\mgall\Coding Projects\simple-audio-classifier\data\processed_samples\bags.wav"

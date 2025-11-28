@@ -70,6 +70,8 @@ def save_dataset(dataset_name):
                 print(f"Failed to load audio from {filepath}, skipping.")
                 continue
 
+            print(f"Extracting features for {song_label}...")
+
             # Get audio chunks
             features = fe.extract_features_from_audio(audio)
 
@@ -78,12 +80,12 @@ def save_dataset(dataset_name):
 
             # Add appropriate number of integer labels for this audio file
             y.extend([label_map[song_label]] * len(features))
+
         
     if len(X) == 0:
         # This should raise an error if no data was loaded
         raise RuntimeError("No data found - check metadata.json and data_dir")
     
-
     X = np.array(X)
     y = np.array(y)
 
@@ -108,4 +110,4 @@ def save_dataset(dataset_name):
     print("Classes:", len(label_map))
 
 if __name__ == "__main__":
-    save_dataset("Ten Clairo Songs")
+    save_dataset("Ten Clairo Songs v3")
