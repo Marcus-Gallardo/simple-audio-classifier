@@ -86,7 +86,9 @@ def save_dataset(dataset_name):
         # This should raise an error if no data was loaded
         raise RuntimeError("No data found - check metadata.json and data_dir")
     
-    X = np.array(X)
+    # Use to float16 to reduce file size and memory buffer size in RAM
+    X = np.array(X, dtype=np.float16)
+    
     y = np.array(y)
 
     # Convert labels to one-hot encoding
@@ -98,7 +100,7 @@ def save_dataset(dataset_name):
     # Create path if it doesn't exist
     os.makedirs(dataset_path, exist_ok=True)
 
-    np.save(f"{dataset_path}/X.npy", X)
+    np.savez_compressed(f"{dataset_path}/X_compressed", X)
     np.save(f"{dataset_path}/y_int.npy", y_int)
 
     with open(f"{dataset_path}/label_map.json", "w") as f:
@@ -109,5 +111,5 @@ def save_dataset(dataset_name):
     print("y shape:", y_int.shape)
     print("Classes:", len(label_map))
 
-if __name__ == "__main__":
-    save_dataset("Ten Clairo Songs v3")
+# if __name__ == "__main__":
+#     save_dataset("Clairo, Rush, Juice WRLD")

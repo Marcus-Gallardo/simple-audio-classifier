@@ -2,6 +2,7 @@ import os
 import json
 import librosa
 import numpy as np
+import tensorflow as tf
 
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.utils import to_categorical
@@ -95,7 +96,7 @@ class Trainer:
 
     #     return X, y_onehot, label_map
     
-    def train(self, dataset_name, run_name, test_size=0.2, val_size=0.1, batch_size=32, epochs=50):
+    def train(self, dataset_name, model_name, test_size=0.2, val_size=0.1, batch_size=128, epochs=50):
         # Load data
         X, y, label_map = load_dataset(dataset_name)
 
@@ -134,18 +135,36 @@ class Trainer:
         # Define early stopping
         early_stop = EarlyStopping(monitor='val_loss', patience=5, restore_best_weights=True)
         
+        # Use prefetching for train, val, and test datasets
+        # Prevents CPU from idling when data needs to be fetched
+        train_ds = (
+            tf.data.Dataset.from_tensor_slices((X_train, y_train))
+            .shuffle(4096)
+            .batch(batch_size)
+            .prefetch(tf.data.AUTOTUNE)
+        )
+
+        val_ds = (
+            tf.data.Dataset.from_tensor_slices((X_val, y_val))
+            .batch(batch_size)
+            .prefetch(tf.data.AUTOTUNE)
+        )
+
+        test_ds = (
+            tf.data.Dataset.from_tensor_slices((X_test, y_test))
+            .batch(batch_size)
+        )
+
         # Train
         history = self.model.fit(
-            X_train, y_train,
-            validation_data=(X_val, y_val),
-            batch_size=batch_size,
+            train_ds,
+            validation_data=val_ds,
             epochs=epochs,
             callbacks=[early_stop],
-            shuffle=True
         )
         
         # Evaluate
-        _, test_acc = self.model.evaluate(X_test, y_test, verbose=1)
+        _, test_acc = self.model.evaluate(test_ds, verbose=1)
 
         # Define input shape as shape of first training sample
         input_shape = X.shape[1:]
@@ -153,22 +172,23 @@ class Trainer:
         # Save metadata
         metadata = {
             "dataset_name": dataset_name,
-            "run_name": run_name,
+            "model_name": model_name,
             "test_accuracy": float(test_acc),
             "epochs_trained": len(history.history["loss"]),
             "num_classes": num_classes,
             "input_shape": input_shape,
+            "label_map": label_map
         }
 
-        self.save_model(run_name, metadata, history)
+        self.save_model(model_name, metadata, history)
 
         return self.model
     
     # Saves the trained model to a file
-    def save_model(self, run_name, metadata, history):
+    def save_model(self, model_name, metadata, history):
 
         # Ensure directory for saving models exists
-        run_dir = os.path.join(get_project_root(), get_model_path(), run_name)
+        run_dir = os.path.join(get_project_root(), get_model_path(), model_name)
         os.makedirs(run_dir, exist_ok=True)
 
         save_path = os.path.join(run_dir, "model.keras")

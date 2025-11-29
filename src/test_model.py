@@ -62,10 +62,10 @@ def predict_audio(model_path, audio_path, dataset_name):
 
 
 if __name__ == "__main__":
-    dataset_name = "Ten Clairo Songs v3"
-    run_name = "run 3"
+    dataset_name = "Clairo, Rush, Juice WRLD"
+    model_name = "run 3"
 
-    model_path = os.path.join(get_model_path(), run_name, "model.keras")
+    model_path = os.path.join(get_model_path(), model_name, "model.keras")
     audio_path = r"C:\Users\mgall\Coding Projects\simple-audio-classifier\data\processed_samples\bags.wav"
 
     pred_label, _, labeled_probs = predict_audio(model_path, audio_path, dataset_name)
@@ -74,6 +74,7 @@ if __name__ == "__main__":
     print()
     print(f"All prediction probabilities:")
     print()
+
     for label in labeled_probs.keys():
         print(f"{label}: {round(labeled_probs[label], 3)}")
     print()

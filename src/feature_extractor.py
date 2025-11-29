@@ -1,7 +1,8 @@
 import numpy as np
+import io
 import librosa
-import librosa.effects
 
+from pydub import AudioSegment
 from src.audio_augmentor import AudioAugmentor
 
 class FeatureExtractor():
@@ -40,9 +41,35 @@ class FeatureExtractor():
             y, _ = librosa.effects.trim(y)  # Trim leading/trailing silence
             return y
         except Exception as e:
-            print(f"[ERROR] Could not load {path}: {e}")
+            print(f"Could not load {path}: {e}")
             return None
     
+    # Loads the audio file form file storage, converts to mono, and trims silience
+    def load_audio_from_filestorage(self, file_storage):
+        try:
+            data = file_storage.read()
+            file_storage.seek(0)  # Reset pointer
+
+            # Load with pydub
+            audio_segment = AudioSegment.from_file(io.BytesIO(data))
+
+            # Convert to mono and target sr
+            audio_segment = audio_segment.set_channels(1).set_frame_rate(self.sr)
+
+            # Get raw samples as numpy array
+            y = np.array(audio_segment.get_array_of_samples()).astype(np.float32)
+
+            # Normalize audio range
+            y /= np.iinfo(audio_segment.array_type).max
+
+            # Trim silence
+            y, _ = librosa.effects.trim(y)
+
+            return y
+        except Exception as e:
+            print(f"Could not load uploaded audio: {e}")
+            return None
+
     def get_audio_chunks(self, y):
 
         print("\tChunking audio...")

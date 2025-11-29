@@ -1,93 +1,39 @@
-# import numpy as np
-# import matplotlib.pyplot as plt
-# import time
+import traceback
 
-from src.feature_extractor import FeatureExtractor
-from src.trainer import Trainer
-from src.utils import get_raw_audio_path
-from src.load_dataset import load_dataset
-from src.model_builder import build_cnn_v2
-from tensorflow.keras.models import load_model
-# from src.youtube_downloader import YouTubeDownloader
+from flask import Flask, render_template, request, jsonify
+from src.inference import load_model, predict_audio
 
+app = Flask(__name__)
 
-# from sklearn.metrics import ConfusionMatrixDisplay, classification_report
+model_name = "Model v0"
 
-# # Initialize YouTube downloader
-# downloader = YouTubeDownloader()
+model, label_map = load_model(model_name)
 
-# artists = ["Clairo", "Rush", "Juice WRLD"]
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-# downloader.download_artists(artists, max_per_artist=10)
+@app.route("/predict", methods=["POST"])
+def predict():
+    try:
+        # Ensure audio is present
+        if "audio" not in request.files:
+            return jsonify({"error": "No file uploaded"}), 400
 
-# Initialize feature extractor
-fe = FeatureExtractor()
+        audio_file = request.files["audio"]
 
-dataset_name = "Ten Clairo Songs v3"
+        # Make prediction
+        pred_label, labeled_probs = predict_audio(model, label_map, audio_file)
+        
+        return jsonify({
+            "prediction": pred_label,
+            "probabilities": labeled_probs
+        })
 
-# Load dataset
-_,  _, label_map = load_dataset(dataset_name)
+    except Exception as e:
+        print("[PREDICT ERROR]", e)
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
-# Calculate input shape for the model
-input_shape = (fe.n_mels, fe.n_frames, fe.n_channels)
-
-# Build model
-model = build_cnn_v2(input_shape=input_shape, num_classes=len(label_map))
-
-# Initialize trainer
-trainer = Trainer(feature_extractor=fe, model=model, data_dir=get_raw_audio_path())
-
-# Train model
-trainer.train(dataset_name=dataset_name, run_name="run 3")
-
-# # Get number of songs (number of possible outputs for the model)
-# num_classes = downloader.get_num_songs()
-
-# # Calculate input shape for the model
-# input_shape = (fe.n_mels, fe.n_frames, fe.n_channels)
-
-# print("Building Model...")
-# model = build_mfcc_cnn(input_shape, num_classes)
-
-# # Get path to raw audio data for trainer
-# data_dir = get_raw_audio_path()
-
-# Initialize trainer
-# trainer = Trainer(feature_extractor=fe, model=model, data_dir=data_dir)
-
-# print("Training Model...")
-
-# # Train model
-# history, X_test, y_test, label_map = trainer.train(
-#     test_size=0.2,
-#     val_size=0.1,
-#     batch_size=32,
-#     epochs=50,
-# )
-
-# print("Saving Model...")
-# trainer.save_model(model_name=f"model_{str(time.time())}")
-
-# print("Evaluating Model...")
-
-# # Evaluate model
-# y_pred = model.predict(X_test)
-
-# # Convert predictions from onehot to integer class ([0, 1, 0, 0] turns into class index 1)
-# y_pred_classes = np.argmax(y_pred, axis=1)
-# y_test_classes = np.argmax(y_test, axis=1)
-
-# # Invert the label map to get string labels from integers
-# inv_label_map = {v: k for k, v in label_map.items()}
-
-# # Convert integers back to string labels for report
-# y_pred_labels = [inv_label_map[i] for i in y_pred_classes]
-# y_test_labels = [inv_label_map[i] for i in y_test_classes]
-
-# # Get classification report
-# print(classification_report(y_test_labels, y_pred_labels))
-
-# # Display confusion matrix
-# ConfusionMatrixDisplay.from_predictions(y_test_labels, y_pred_labels)
-# plt.xticks(rotation=45)
-# plt.show()
+if __name__ == "__main__":
+    app.run(debug=True)
