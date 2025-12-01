@@ -2,8 +2,9 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Song Recognizer</title>
+    <title>Song Recognition Demo</title>
     <script src="/static/js/record.js"></script>
+
     <style>
         #level {
             width: 300px;
@@ -21,18 +22,20 @@
 <body>
     <h1>Song Recognition Demo</h1>
 
-    <label for="duration">Recording Duration (seconds): </label>
-    <input type="number" id="duration" min="1" max="60" value="5">
+    <label for="micSelect">Select Microphone:</label>
+    <select id="micSelect"></select>
 
-    <button id="recordButton">Record</button>
-
-    <div id="result"></div>
-    <div id="probabilities"></div>
     <div id="level">
         <div id="levelBar"></div>
     </div>
 
-    <label for="micSelect">Select Microphone:</label>
-    <select id="micSelect"></select>
+    <button id="recordButton">Record</button>
+
+    <div id="stopwatch" style="font-size:22px; margin:10px 0;">00:00</div>
+
+    <div id="result"></div>
+    <div id="probabilities"></div>
+
+    
 </body>
 </html>

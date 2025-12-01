@@ -29,7 +29,6 @@ def predict():
             "prediction": pred_label,
             "probabilities": labeled_probs
         })
-
     except Exception as e:
         print("[PREDICT ERROR]", e)
         traceback.print_exc()
