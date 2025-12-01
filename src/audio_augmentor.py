@@ -74,37 +74,37 @@ class AudioAugmentor:
         return audio
 
     def light_augmentation(self, audio):
-        # --- 1. Preemphasis (boost high frequencies) ---
+        # Preemphasis (boost high frequencies)
         audio = librosa.effects.preemphasis(audio)
 
-        # --- 2. Add light white noise ---
+        # Add light white noise
         if np.random.rand() < 0.5:
             noise_level = np.random.uniform(0.0, 0.005)
             audio = audio + np.random.randn(len(audio)) * noise_level
 
-        # --- 3. Mild pitch shift (±0.25 semitones) ---
+        # Mild pitch shift
         pitch_shift = np.random.uniform(-0.25, 0.25)
         if pitch_shift != 0:
             audio = librosa.effects.pitch_shift(audio, sr=self.sr, n_steps=pitch_shift)
 
-        # --- 4. Slight time stretch (0.98–1.02) ---
+        # Slight time stretch
         stretch = np.random.uniform(0.98, 1.02)
         if stretch != 1:
             audio = librosa.effects.time_stretch(audio, rate=stretch)
 
-        # --- 5. Light volume scaling (0.8–1.2) ---
+        # Light volume scaling
         volume = np.random.uniform(0.8, 1.2)
         audio = audio * volume
 
-        # --- 6. Minor time shift (±0.01–0.02 sec) ---
+        # Minor time shift
         shift = int(np.random.uniform(-0.02*self.sr, 0.02*self.sr))
         audio = np.roll(audio, shift)
 
-        # --- 7. Optional mild EQ (low/med/high) ---
+        # Small random EQ shift
         if np.random.rand() < 0.3:
             audio = self.random_eq(audio, gain_range=(0.9, 1.1))
 
-        # --- 8. Optional mild reverb ---
+        # Small random reverb
         if np.random.rand() < 0.2:
             audio = self.add_reverb(audio, decay=0.1)
 

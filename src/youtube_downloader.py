@@ -10,12 +10,12 @@ class YouTubeDownloader():
     songs_dict = {}
 
     def __init__(self):
-        self.songs_dict = self._get_downloaded_songs()
+        self.songs_dict = self.get_downloaded_songs()
 
         self.yt = YTMusic()
 
     # Gets the already-downloaded songs from the raw audio directory
-    def _get_downloaded_songs(self):
+    def get_downloaded_songs(self):
 
         # Get path to raw audio directory
         raw_audio_path = get_raw_audio_path()
@@ -60,7 +60,7 @@ class YouTubeDownloader():
         return False
 
     # Downloads audio from a YouTube URL and saves it as a .wav file
-    def _download_youtube_audio(self, url, artist_dir, song_title):
+    def download_youtube_audio(self, url, artist_dir, song_title):
         # Check if artist directory exists
         if not os.path.exists(artist_dir):
             print(f"Could not find artist directory \"{artist_dir}\" for downloading audio.")
@@ -152,7 +152,7 @@ class YouTubeDownloader():
 
             video_id = song["videoId"]
             youtube_url = f"https://www.youtube.com/watch?v={video_id}"
-            self._download_youtube_audio(youtube_url, artist_dir, song['title'])
+            self.download_youtube_audio(youtube_url, artist_dir, song['title'])
             self.add_song_to_metadata(artist_dir, song["title"], f"{sanitize_for_path((song['title']))}.wav")
 
     # Downloads songs based on the given song names
@@ -191,7 +191,7 @@ class YouTubeDownloader():
 
             video_id = song_results[0]["videoId"]
             youtube_url = f"https://www.youtube.com/watch?v={video_id}"
-            self._download_youtube_audio(youtube_url, artist_dir, song_title)
+            self.download_youtube_audio(youtube_url, artist_dir, song_title)
             self.add_song_to_metadata(artist_dir, song_title, f"{sanitize_for_path((song_title))}.wav")
 
     # Returns the number of songs in the dataset.
