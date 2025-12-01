@@ -1,9 +1,15 @@
 let chunks = [];
 let mediaRecorder;
-let audioContext, analyser, dataArray;
 
 document.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("recordButton").onclick = recordAndProcessAudio;
+    document.getElementById("recordButton").onclick = () => {
+        const duration = parseInt(document.getElementById("duration").value) || 5;
+        document.getElementById("result").innerText = ""
+        document.getElementById("probabilities").innerText = ""
+        recordAndProcessAudio(duration);
+    };
+
+    populateMicOptions();
 });
 
 async function populateMicOptions() {
@@ -18,23 +24,13 @@ async function populateMicOptions() {
     });
 }
 
-populateMicOptions();
-
-async function recordAndProcessAudio() {
+async function recordAndProcessAudio(duration) {
     const select = document.getElementById("micSelect");
     const deviceId = select.value;
 
-    const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { deviceId: deviceId ? { exact: deviceId } : undefined } 
+    const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { deviceId: deviceId ? { exact: deviceId } : undefined }
     });
-
-    // Setup audio context for level meter
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioContext.createAnalyser();
-    const source = audioContext.createMediaStreamSource(stream);
-    source.connect(analyser);
-    analyser.fftSize = 256;
-    dataArray = new Uint8Array(analyser.frequencyBinCount);
 
     mediaRecorder = new MediaRecorder(stream);
     chunks = [];
@@ -42,8 +38,6 @@ async function recordAndProcessAudio() {
     mediaRecorder.ondataavailable = e => chunks.push(e.data);
 
     mediaRecorder.onstop = async () => {
-        audioContext.close(); // stop level meter
-
         let blob = new Blob(chunks, { type: chunks[0].type || 'audio/webm' });
         let formData = new FormData();
         formData.append("audio", blob, "recording.webm");
@@ -62,7 +56,6 @@ async function recordAndProcessAudio() {
             // Display top probabilities
             let probsContainer = document.getElementById("probabilities");
             probsContainer.innerHTML = "";
-
             let sorted = Object.entries(json.probabilities).sort((a, b) => b[1] - a[1]);
             for (let [label, prob] of sorted) {
                 let p = document.createElement("p");
@@ -77,7 +70,17 @@ async function recordAndProcessAudio() {
 
     mediaRecorder.start();
 
-    // Update audio level meter
+    // Automatically stop after `duration` seconds
+    setTimeout(() => mediaRecorder.stop(), duration * 1000);
+
+    // Optional: add audio level meter
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const analyser = audioContext.createAnalyser();
+    const source = audioContext.createMediaStreamSource(stream);
+    source.connect(analyser);
+    analyser.fftSize = 256;
+    const dataArray = new Uint8Array(analyser.fftSize);
+
     function updateLevel() {
         analyser.getByteTimeDomainData(dataArray);
         let sum = 0;
@@ -91,6 +94,4 @@ async function recordAndProcessAudio() {
     }
 
     updateLevel();
-
-    setTimeout(() => mediaRecorder.stop(), 1000 * 15); // 15s recording
 }
