@@ -3,10 +3,8 @@ import json
 import numpy as np
 
 from tensorflow.keras.models import load_model as keras_load
-from src.load_dataset import load_dataset
 from src.feature_extractor import FeatureExtractor
 from src.utils import get_model_path
-from tensorflow.keras.utils import to_categorical
 
 # Returns the model and label map
 def load_model(model_name):

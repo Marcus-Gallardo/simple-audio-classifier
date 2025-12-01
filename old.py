@@ -1,16 +1,17 @@
-import os
-os.environ["OMP_NUM_THREADS"] = "12"
-os.environ["TF_NUM_INTRAOP_THREADS"] = "12"
-os.environ["TF_NUM_INTEROP_THREADS"] = "12"
+# import os
+# os.environ["OMP_NUM_THREADS"] = "12"
+# os.environ["TF_NUM_INTRAOP_THREADS"] = "12"
+# os.environ["TF_NUM_INTEROP_THREADS"] = "12"
 
-from src.feature_extractor import FeatureExtractor
-from src.trainer import Trainer
-from src.utils import get_raw_audio_path
-from src.load_dataset import load_dataset
-from src.model_builder import build_cnn_v2
-from src.save_dataset import save_dataset
-from tensorflow.keras.models import load_model
+# from src.feature_extractor import FeatureExtractor
+# from src.trainer import Trainer
+# from src.utils import get_raw_audio_path
+# from src.load_dataset import load_dataset
+# from src.model_builder import build_cnn_v2
+# from src.save_dataset import save_dataset
+# from tensorflow.keras.models import load_model
 from src.youtube_downloader import YouTubeDownloader
+from src.dataset_manager import DatasetManager
 
 # from sklearn.metrics import ConfusionMatrixDisplay, classification_report
 
@@ -20,6 +21,12 @@ downloader = YouTubeDownloader()
 songs = ["We fell in love in october", "blessings kettama remix"]
 
 downloader.download_songs(songs)
+
+dm = DatasetManager()
+
+dm.save_dataset("girl in red and Calvin Harris", only_artists=["Calvin Harris", "girl in red"])
+dm.combine_datasets(["10 Clairo Songs", "girl in red and Calvin Harris"], "Clairo, girl in red, Calvin Harris")
+
 
 # artists = ["Clairo", "Rush", "Juice WRLD"]
 

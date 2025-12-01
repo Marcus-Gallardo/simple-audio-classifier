@@ -165,16 +165,14 @@ class YouTubeDownloader():
                 print(f"No results for '{song_descriptor}' on YouTube Music. Skipping.")
                 return []
 
-            print(song_results[0])
-
             # Get the artist name (first artist)
             official_artist_name = song_results[0]["artists"][0]["name"]
             
             if not official_artist_name:
-                print(f"Could not find the artist for song '{song_descriptor}' on YouTube Music. Skipping.")
+                print(f"Could not find the artist for '{song_descriptor}' on YouTube Music. Skipping.")
                 return
             else:
-                print(f"Found artist '{official_artist_name}' for song '{song_descriptor}'.")
+                print(f"Found artist '{official_artist_name}' for '{song_descriptor}'.")
 
             # Get the artist's ID
             artist_id = song_results[0]["artists"][0]["id"]
