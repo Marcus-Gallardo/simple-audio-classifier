@@ -11,7 +11,8 @@ class YouTubeDownloader():
 
     def __init__(self):
         self.songs_dict = self._get_downloaded_songs()
-        print(self.songs_dict)
+
+        self.yt = YTMusic()
 
     # Gets the already-downloaded songs from the raw audio directory
     def _get_downloaded_songs(self):
@@ -99,11 +100,9 @@ class YouTubeDownloader():
 
     # Downloads the top songs of a given artist
     def download_artist_audio(self, artist_name, max_per_artist=3):
-        
-        yt = YTMusic()
 
         # Search YouTube Music for the artist
-        artist_results = yt.search(artist_name, filter="artists")
+        artist_results = self.yt.search(artist_name, filter="artists")
 
         if not artist_results:
             print(f"No results for '{artist_name}' on YouTube Music. Skipping.")
@@ -122,7 +121,7 @@ class YouTubeDownloader():
         artist_id = artist_results[0]["browseId"]
 
         # Get artist's official songs
-        song_results = yt.search(artist_name, filter="songs")
+        song_results = self.yt.search(artist_name, filter="songs")
         
         # Filter only songs where the first listed artist matches exactly
         songs = [
@@ -156,6 +155,47 @@ class YouTubeDownloader():
             self._download_youtube_audio(youtube_url, artist_dir, song['title'])
             self.add_song_to_metadata(artist_dir, song["title"], f"{sanitize_for_path((song['title']))}.wav")
 
+    # Downloads songs based on the given song names
+    def download_songs(self, songs):
+        for song_descriptor in songs:
+            # Search YouTube Music for the artist
+            song_results = self.yt.search(song_descriptor, filter="songs")
+
+            if not song_results:
+                print(f"No results for '{song_descriptor}' on YouTube Music. Skipping.")
+                return []
+
+            print(song_results[0])
+
+            # Get the artist name (first artist)
+            official_artist_name = song_results[0]["artists"][0]["name"]
+            
+            if not official_artist_name:
+                print(f"Could not find the artist for song '{song_descriptor}' on YouTube Music. Skipping.")
+                return
+            else:
+                print(f"Found artist '{official_artist_name}' for song '{song_descriptor}'.")
+
+            # Get the artist's ID
+            artist_id = song_results[0]["artists"][0]["id"]
+
+            # Create artist directory and write metadata
+            root = get_project_root()
+            artist_dir = os.path.join(root, "data", "raw_audio", sanitize_for_path(official_artist_name))
+            os.makedirs(artist_dir, exist_ok=True)
+            self.write_artist_metadata(artist_dir, official_artist_name, artist_id)
+
+            song_title = song_results[0]["title"]
+
+            # Don't download the song if it's already been downloaded
+            if self._song_already_downloaded(official_artist_name, song_title):
+                continue
+
+            video_id = song_results[0]["videoId"]
+            youtube_url = f"https://www.youtube.com/watch?v={video_id}"
+            self._download_youtube_audio(youtube_url, artist_dir, song_title)
+            self.add_song_to_metadata(artist_dir, song_title, f"{sanitize_for_path((song_title))}.wav")
+
     # Returns the number of songs in the dataset.
     def get_num_songs(self):
         total_songs = 0
@@ -170,6 +210,7 @@ class YouTubeDownloader():
         else:
             return 0
 
+    # Downloads the songs for the given artists
     def download_artists(self, artists, max_per_artist=3):
         for artist in artists:
             self.download_artist_audio(artist, max_per_artist=max_per_artist)
